@@ -30,6 +30,7 @@ export const requestAllPermissions = async () => {
 
   } catch (error) {
     console.error("Error requesting permissions:", error);
+    return false;
   }
 
   
