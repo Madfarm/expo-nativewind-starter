@@ -42,7 +42,8 @@
     "react-native-webview": "13.12.5",
     "tailwindcss": "^3.4.17",
     "whisper.rn": "^0.3.9",
-    "expo-dev-client": "~5.0.12"
+    "expo-dev-client": "~5.0.12",
+    "expo-media-library": "~17.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
