@@ -5,10 +5,15 @@ import {
   View,
   Pressable
 } from "react-native";
+import { initWhisper } from 'whisper.rn'
 
 
-export default function Index() {
+export default async function Index() {
   const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false);
+
+  const whisperContext = await initWhisper({
+    filePath: require('../assets/model/ggml-small.bin')
+  })
 
   return (
     <View className="bg-gray-600 h-screen flex-1 items-center justify-evenly p-4">
@@ -24,6 +29,8 @@ export default function Index() {
         <Text className="text-white text-2xl">Request Permissions</Text>
       </Pressable>
       }
+
+
 
     </View>
   );

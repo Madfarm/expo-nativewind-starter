@@ -38,4 +38,4 @@ yarn-error.*
 app-example
 
 
-assets/model/ggml-large-v2-q5_0.bin
+assets/model/ggml-small.bin
