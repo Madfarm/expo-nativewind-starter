@@ -36,3 +36,6 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+
+assets/model/ggml-large-v2-q5_0.bin
