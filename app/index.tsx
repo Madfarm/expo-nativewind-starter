@@ -12,7 +12,7 @@ export default async function Index() {
   const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false);
 
   const whisperContext = await initWhisper({
-    filePath: require('../assets/model/ggml-small.bin')
+    filePath: require('../assets/model/ggml-base.bin')
   })
 
   return (
