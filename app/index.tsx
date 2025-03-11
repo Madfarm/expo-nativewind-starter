@@ -12,10 +12,14 @@ import { fileDir, modelHost, createDir } from "@/lib/util";
 
 
 export default function Index() {
-  const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false);
-  const [logs, setLogs] = useState(["Campfire mobile"])
   const whisperContextRef = useRef<WhisperContext | null>(null);
   const whisperContext = whisperContextRef.current;
+  const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false);
+  const [logs, setLogs] = useState(["Campfire mobile"])
+  const [transcibeResult, setTranscibeResult] = useState<string | null>(null)
+  const [stopTranscribe, setStopTranscribe] = useState<{
+    stop: () => void
+  } | null>(null)
 
   const log = useCallback((...messages: any[]) => {
     setLogs((prev) => [...prev, messages.join(' ')])
