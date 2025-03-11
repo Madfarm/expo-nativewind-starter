@@ -11,7 +11,7 @@ import type { WhisperContext } from "whisper.rn";
 import { fileDir, modelHost, createDir } from "@/lib/util";
 
 
-export default async function Index() {
+export default function Index() {
   const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false);
   const [logs, setLogs] = useState(["Campfire mobile"])
   const whisperContextRef = useRef<WhisperContext | null>(null);
@@ -35,6 +35,7 @@ export default async function Index() {
           <Pressable
             className="h-24 w-40 rounded-lg border-2 border-black bg-black p-2"
             onPress={async () => {
+              
               setPermissionsGranted(await requestAllPermissions())
             }}
           >
