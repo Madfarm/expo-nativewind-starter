@@ -52,6 +52,22 @@ export default function Index() {
               const perms = await requestAllPermissions()
               log(`Permissions granted? - ${perms}`)
               setPermissionsGranted(perms)
+
+              if (whisperContext) {
+                log('Found previous context')
+                await whisperContext.release()
+                whisperContextRef.current = null
+                log('Released previous context')
+              }
+              log('Initialize context...')
+              const startTime = Date.now()
+              const ctx = await initWhisper({
+                filePath: require('../assets/model/ggml-small.bin'),
+              })
+              const endTime = Date.now()
+              log('Loaded model, ID:', ctx.id)
+              log('Loaded model in', endTime - startTime, "ms")
+              whisperContextRef.current = ctx
             }}
           >
             <Text className="text-white text-2xl">Request Permissions</Text>
