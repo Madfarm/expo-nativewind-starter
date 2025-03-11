@@ -26,6 +26,20 @@ export default function Index() {
     whisperContextRef.current = null
   }, [])
 
+  const progress = useCallback(
+    ({
+      contentLength,
+      bytesWritten,
+    }: {
+      contentLength: number
+      bytesWritten: number
+    }) => {
+      const written = bytesWritten >= 0 ? bytesWritten : 0
+      log(`Download progress: ${Math.round((written / contentLength) * 100)}%`)
+    },
+    [log],
+  )
+
   return (
     <ScrollView>
       <View className="bg-gray-600 h-screen flex-1 items-center justify-evenly p-4">
@@ -35,8 +49,9 @@ export default function Index() {
           <Pressable
             className="h-24 w-40 rounded-lg border-2 border-black bg-black p-2"
             onPress={async () => {
-              
-              setPermissionsGranted(await requestAllPermissions())
+              const perms = await requestAllPermissions()
+              log(`Permissions granted? - ${perms}`)
+              setPermissionsGranted(perms)
             }}
           >
             <Text className="text-white text-2xl">Request Permissions</Text>
