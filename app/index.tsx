@@ -80,13 +80,16 @@ export default function Index() {
                     audioOutputPath: "../assets/model/temp.wav",
                   })
                 setStopTranscribe({ stop })
-                subscribe((evt) => {
+                subscribe(async (evt) => {
                   const { isCapturing, data, processTime, recordingTime } = evt
+                
                   setTranscibeResult(
                     `Realtime transcribing: ${isCapturing ? 'ON' : 'OFF'}\n` +
                     `Result: ${data?.result}\n\n` +
                     `Process time: ${processTime}ms\n` +
-                    `Recording time: ${recordingTime}ms` +
+                    `Recording time: ${recordingTime}ms\n` +
+                    `Stop detected: ${data?.result.includes("stop")}\n` +
+                    `Start detected: ${data?.result.includes("start")}\n` +
                     `\n` +
                     `Segments:` +
                     `\n${data?.segments
@@ -98,6 +101,7 @@ export default function Index() {
                       )
                       .join('\n')}`,
                   )
+
                   if (!isCapturing) {
                     setStopTranscribe(null)
                     log('Finished realtime transcribing')
@@ -144,7 +148,7 @@ export default function Index() {
         }
 
         {transcibeResult && (
-          <View className="bg-white">
+          <View className="bg-white p-2">
             <Text className="text-black text-md">{transcibeResult}</Text>
           </View>
         )}
