@@ -77,30 +77,15 @@ export default function Index() {
                     // Slice audio into 25 (or < 30) sec chunks for better performance
                     realtimeAudioSliceSec: 25,
                     // Save audio on stop
-                    audioOutputPath: "../assets/model/temp.wav",
+                    audioOutputPath: "../assets/audio/temp.wav",
                   })
                 setStopTranscribe({ stop })
                 subscribe(async (evt) => {
                   const { isCapturing, data, processTime, recordingTime } = evt
-                
-                  setTranscibeResult(
-                    `Realtime transcribing: ${isCapturing ? 'ON' : 'OFF'}\n` +
-                    `Result: ${data?.result}\n\n` +
-                    `Process time: ${processTime}ms\n` +
-                    `Recording time: ${recordingTime}ms\n` +
-                    `Stop detected: ${data?.result.includes("stop")}\n` +
-                    `Start detected: ${data?.result.includes("start")}\n` +
-                    `\n` +
-                    `Segments:` +
-                    `\n${data?.segments
-                      .map(
-                        (segment) =>
-                          `[${toTimestamp(segment.t0)} --> ${toTimestamp(
-                            segment.t1,
-                          )}]  ${segment.text}`,
-                      )
-                      .join('\n')}`,
-                  )
+                  
+                  if (data?.result.includes("start")) {
+                    setTranscibeResult(`${data?.result}`)
+                  }
 
                   if (!isCapturing) {
                     setStopTranscribe(null)
