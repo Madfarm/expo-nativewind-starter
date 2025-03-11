@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { initWhisper } from 'whisper.rn'
 import type { WhisperContext } from "whisper.rn";
-import { fileDir, modelHost, createDir } from "@/lib/util";
+import { fileDir, modelHost, createDir, toTimestamp } from "@/lib/util";
 
 
 export default function Index() {
@@ -72,11 +72,70 @@ export default function Index() {
               log('Loaded model, ID:', ctx.id)
               log('Loaded model in', endTime - startTime, "ms")
               whisperContextRef.current = ctx
+
+              if (stopTranscribe?.stop) {
+                const t0 = Date.now()
+                await stopTranscribe?.stop()
+                const t1 = Date.now()
+                log('Stopped transcribing in', t1 - t0, 'ms')
+                setStopTranscribe(null)
+                return
+              }
+              log('Start realtime transcribing...')
+              if (!whisperContext) return log('No context')
+              try {
+                await createDir(log)
+                const { stop, subscribe } =
+                  await whisperContext.transcribeRealtime({
+                    maxLen: 1,
+                    language: 'en',
+                    // Enable beam search (may be slower than greedy but more accurate)
+                    // beamSize: 2,
+                    // Record duration in seconds
+                    realtimeAudioSec: 60,
+                    // Slice audio into 25 (or < 30) sec chunks for better performance
+                    realtimeAudioSliceSec: 25,
+                    // Save audio on stop
+                    audioOutputPath: require("../assets/model/temp.wav"),
+                  })
+                setStopTranscribe({ stop })
+                subscribe((evt) => {
+                  const { isCapturing, data, processTime, recordingTime } = evt
+                  setTranscibeResult(
+                    `Realtime transcribing: ${isCapturing ? 'ON' : 'OFF'}\n` +
+                    `Result: ${data?.result}\n\n` +
+                    `Process time: ${processTime}ms\n` +
+                    `Recording time: ${recordingTime}ms` +
+                    `\n` +
+                    `Segments:` +
+                    `\n${data?.segments
+                      .map(
+                        (segment) =>
+                          `[${toTimestamp(segment.t0)} --> ${toTimestamp(
+                            segment.t1,
+                          )}]  ${segment.text}`,
+                      )
+                      .join('\n')}`,
+                  )
+                  if (!isCapturing) {
+                    setStopTranscribe(null)
+                    log('Finished realtime transcribing')
+                  }
+                })
+              } catch (e) {
+                log('Error:', e)
+              }
             }}
           >
             <Text className="text-white text-2xl">Request Permissions</Text>
           </Pressable>
         }
+
+        {transcibeResult && (
+          <View className="bg-white">
+            <Text className="text-black text-md">{transcibeResult}</Text>
+          </View>
+        )}
 
       </View>
 
