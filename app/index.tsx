@@ -4,7 +4,8 @@ import {
   Text,
   View,
   Pressable,
-  ScrollView
+  ScrollView,
+  Button
 } from "react-native";
 import { initWhisper } from 'whisper.rn'
 import type { WhisperContext } from "whisper.rn";
@@ -49,30 +50,10 @@ export default function Index() {
       <View className="bg-gray-600 h-screen flex-1 items-center justify-evenly p-4">
         <Text className="text-white text-2xl">Expo Nativewind Starter</Text>
 
-        {!permissionsGranted &&
-          <Pressable
-            className="h-24 w-40 rounded-lg border-2 border-black bg-black p-2"
+        {permissionsGranted &&
+          <Button
+            title={stopTranscribe?.stop ? 'Stop' : 'Realtime'}
             onPress={async () => {
-              const perms = await requestAllPermissions()
-              log(`Permissions granted? - ${perms}`)
-              setPermissionsGranted(perms)
-
-              if (whisperContext) {
-                log('Found previous context')
-                await whisperContext.release()
-                whisperContextRef.current = null
-                log('Released previous context')
-              }
-              log('Initialize context...')
-              const startTime = Date.now()
-              const ctx = await initWhisper({
-                filePath: require('../assets/model/ggml-small.bin'),
-              })
-              const endTime = Date.now()
-              log('Loaded model, ID:', ctx.id)
-              log('Loaded model in', endTime - startTime, "ms")
-              whisperContextRef.current = ctx
-
               if (stopTranscribe?.stop) {
                 const t0 = Date.now()
                 await stopTranscribe?.stop()
@@ -96,7 +77,7 @@ export default function Index() {
                     // Slice audio into 25 (or < 30) sec chunks for better performance
                     realtimeAudioSliceSec: 25,
                     // Save audio on stop
-                    audioOutputPath: require("../assets/model/temp.wav"),
+                    audioOutputPath: "../assets/model/temp.wav",
                   })
                 setStopTranscribe({ stop })
                 subscribe((evt) => {
@@ -125,6 +106,37 @@ export default function Index() {
               } catch (e) {
                 log('Error:', e)
               }
+
+            }}
+          >
+
+          </Button>
+        }
+        {!permissionsGranted &&
+          <Pressable
+            className="h-24 w-40 rounded-lg border-2 border-black bg-black p-2"
+            onPress={async () => {
+              const perms = await requestAllPermissions()
+              log(`Permissions granted? - ${perms}`)
+              setPermissionsGranted(perms)
+
+              if (whisperContext) {
+                log('Found previous context')
+                await whisperContext.release()
+                whisperContextRef.current = null
+                log('Released previous context')
+              }
+              log('Initialize context...')
+              const startTime = Date.now()
+              const ctx = await initWhisper({
+                filePath: require('../assets/model/ggml-small.bin'),
+              })
+              const endTime = Date.now()
+              log('Loaded model, ID:', ctx.id)
+              log('Loaded model in', endTime - startTime, "ms")
+              whisperContextRef.current = ctx
+
+
             }}
           >
             <Text className="text-white text-2xl">Request Permissions</Text>
