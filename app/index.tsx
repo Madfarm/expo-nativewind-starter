@@ -10,6 +10,8 @@ import {
 import { initWhisper } from 'whisper.rn'
 import type { WhisperContext } from "whisper.rn";
 import { fileDir, modelHost, createDir, toTimestamp } from "@/lib/util";
+import emitter from "@/lib/emitter";
+
 
 
 export default function Index() {
@@ -26,9 +28,17 @@ export default function Index() {
     setLogs((prev) => [...prev, messages.join(' ')])
   }, [])
 
-  useEffect(() => () => {
+  useEffect(() => {
     whisperContextRef.current?.release()
     whisperContextRef.current = null
+
+    emitter.addListener("stopDetected", async () => {
+      log("Stop was detected")
+    })
+
+    return () => {
+      emitter.removeAllListeners();
+    }
   }, [])
 
   const progress = useCallback(
@@ -85,6 +95,10 @@ export default function Index() {
                   
                   if (data?.result.includes("start")) {
                     setTranscibeResult(`${data?.result}`)
+                  }
+
+                  if (data?.result.includes("stop")) {
+                    emitter.emit("stopDetected", { message: "what up"})
                   }
 
                   if (!isCapturing) {
