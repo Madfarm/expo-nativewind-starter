@@ -20,9 +20,7 @@ export default function Index() {
   const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false);
   const [logs, setLogs] = useState(["Campfire mobile"])
   const [transcibeResult, setTranscibeResult] = useState<string | null>(null)
-  const [stopTranscribe, setStopTranscribe] = useState<{
-    stop: () => void
-  } | null>(null)
+  const stopTranscribeRef = useRef<{ stop: () => void } | null>(null);
 
   const log = useCallback((...messages: any[]) => {
     setLogs((prev) => [...prev, messages.join(' ')])
@@ -36,10 +34,10 @@ export default function Index() {
       log("Stop was detected")
 
       const t0 = Date.now()
-      await stopTranscribe?.stop()
+      await stopTranscribeRef.current?.stop();
       const t1 = Date.now()
       log('Stopped transcribing in', t1 - t0, 'ms')
-      setStopTranscribe(null)
+      stopTranscribeRef.current = null;
 
       log(transcibeResult)
     })
@@ -64,14 +62,6 @@ export default function Index() {
   )
 
   const startTranscribe = async () => {
-    if (stopTranscribe?.stop) {
-      const t0 = Date.now()
-      await stopTranscribe?.stop()
-      const t1 = Date.now()
-      log('Stopped transcribing button version in', t1 - t0, 'ms')
-      setStopTranscribe(null)
-      return
-    }
     log('Start realtime transcribing...')
     if (!whisperContext) return log('No context')
     try {
@@ -84,7 +74,7 @@ export default function Index() {
           realtimeAudioSliceSec: 25,
           audioOutputPath: "../assets/audio/temp.wav",
         })
-      setStopTranscribe({ stop })
+        stopTranscribeRef.current = { stop };
       subscribe(async (evt) => {
         const { isCapturing, data, processTime, recordingTime } = evt
 
@@ -97,7 +87,7 @@ export default function Index() {
         }
 
         if (!isCapturing) {
-          setStopTranscribe(null)
+          stopTranscribeRef.current = null;
           log('Finished realtime transcribing')
           log(transcibeResult)
         }
@@ -114,7 +104,7 @@ export default function Index() {
 
         {permissionsGranted &&
           <Button
-            title={stopTranscribe?.stop ? 'Stop' : 'Realtime'}
+            title={stopTranscribeRef.current?.stop ? 'Stop' : 'Realtime'}
             onPress={startTranscribe}
           >
 
