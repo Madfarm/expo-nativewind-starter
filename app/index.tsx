@@ -34,6 +34,14 @@ export default function Index() {
 
     emitter.addListener("stopDetected", async () => {
       log("Stop was detected")
+
+      const t0 = Date.now()
+      await stopTranscribe?.stop()
+      const t1 = Date.now()
+      log('Stopped transcribing in', t1 - t0, 'ms')
+      setStopTranscribe(null)
+
+      log(transcibeResult)
     })
 
     return () => {
@@ -55,6 +63,50 @@ export default function Index() {
     [log],
   )
 
+  const startTranscribe = async () => {
+    if (stopTranscribe?.stop) {
+      const t0 = Date.now()
+      await stopTranscribe?.stop()
+      const t1 = Date.now()
+      log('Stopped transcribing button version in', t1 - t0, 'ms')
+      setStopTranscribe(null)
+      return
+    }
+    log('Start realtime transcribing...')
+    if (!whisperContext) return log('No context')
+    try {
+      await createDir(log)
+      const { stop, subscribe } =
+        await whisperContext.transcribeRealtime({
+          maxLen: 1,
+          language: 'en',
+          realtimeAudioSec: 60,
+          realtimeAudioSliceSec: 25,
+          audioOutputPath: "../assets/audio/temp.wav",
+        })
+      setStopTranscribe({ stop })
+      subscribe(async (evt) => {
+        const { isCapturing, data, processTime, recordingTime } = evt
+
+        if (data?.result.toLowerCase().includes("start")) {
+          setTranscibeResult(`${data?.result}`)
+        }
+
+        if (data?.result.toLowerCase().includes("stop")) {
+          emitter.emit("stopDetected", { message: "what up"})
+        }
+
+        if (!isCapturing) {
+          setStopTranscribe(null)
+          log('Finished realtime transcribing')
+          log(transcibeResult)
+        }
+      })
+    } catch (e) {
+      log('Error:', e)
+    }
+  }
+
   return (
     <ScrollView>
       <View className="bg-gray-600 h-screen flex-1 items-center justify-evenly p-4">
@@ -63,54 +115,7 @@ export default function Index() {
         {permissionsGranted &&
           <Button
             title={stopTranscribe?.stop ? 'Stop' : 'Realtime'}
-            onPress={async () => {
-              if (stopTranscribe?.stop) {
-                const t0 = Date.now()
-                await stopTranscribe?.stop()
-                const t1 = Date.now()
-                log('Stopped transcribing in', t1 - t0, 'ms')
-                setStopTranscribe(null)
-                return
-              }
-              log('Start realtime transcribing...')
-              if (!whisperContext) return log('No context')
-              try {
-                await createDir(log)
-                const { stop, subscribe } =
-                  await whisperContext.transcribeRealtime({
-                    maxLen: 1,
-                    language: 'en',
-                    // Enable beam search (may be slower than greedy but more accurate)
-                    // beamSize: 2,
-                    // Record duration in seconds
-                    realtimeAudioSec: 60,
-                    // Slice audio into 25 (or < 30) sec chunks for better performance
-                    realtimeAudioSliceSec: 25,
-                    // Save audio on stop
-                    audioOutputPath: "../assets/audio/temp.wav",
-                  })
-                setStopTranscribe({ stop })
-                subscribe(async (evt) => {
-                  const { isCapturing, data, processTime, recordingTime } = evt
-                  
-                  if (data?.result.includes("start")) {
-                    setTranscibeResult(`${data?.result}`)
-                  }
-
-                  if (data?.result.includes("stop")) {
-                    emitter.emit("stopDetected", { message: "what up"})
-                  }
-
-                  if (!isCapturing) {
-                    setStopTranscribe(null)
-                    log('Finished realtime transcribing')
-                  }
-                })
-              } catch (e) {
-                log('Error:', e)
-              }
-
-            }}
+            onPress={startTranscribe}
           >
 
           </Button>
