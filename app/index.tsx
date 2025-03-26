@@ -10,7 +10,7 @@ import {
 import { initWhisper } from 'whisper.rn'
 import type { WhisperContext } from "whisper.rn";
 import { fileDir, modelHost, createDir, toTimestamp } from "@/lib/util";
-import emitter from "@/lib/emitter";
+
 
 
 
@@ -29,22 +29,6 @@ export default function Index() {
   useEffect(() => {
     whisperContextRef.current?.release()
     whisperContextRef.current = null
-
-    emitter.addListener("stopDetected", async () => {
-      log("Stop was detected")
-
-      const t0 = Date.now()
-      await stopTranscribeRef.current?.stop();
-      const t1 = Date.now()
-      log('Stopped transcribing in', t1 - t0, 'ms')
-      stopTranscribeRef.current = null;
-
-      log(transcibeResult)
-    })
-
-    return () => {
-      emitter.removeAllListeners();
-    }
   }, [])
 
   const progress = useCallback(
@@ -74,7 +58,7 @@ export default function Index() {
           realtimeAudioSliceSec: 25,
           audioOutputPath: "../assets/audio/temp.wav",
         })
-        stopTranscribeRef.current = { stop };
+      stopTranscribeRef.current = { stop };
       subscribe(async (evt) => {
         const { isCapturing, data, processTime, recordingTime } = evt
 
@@ -83,7 +67,16 @@ export default function Index() {
         }
 
         if (data?.result.toLowerCase().includes("stop")) {
-          emitter.emit("stopDetected", { message: "what up"})
+          // emitter.emit("stopDetected", { message: "what up"})
+          log("Stop was detected")
+
+          const t0 = Date.now()
+          await stopTranscribeRef.current?.stop();
+          const t1 = Date.now()
+          log('Stopped transcribing in', t1 - t0, 'ms')
+          stopTranscribeRef.current = null;
+
+          log(transcibeResult)
         }
 
         if (!isCapturing) {
