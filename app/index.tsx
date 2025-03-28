@@ -20,6 +20,7 @@ export default function Index() {
   const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false);
   const [logs, setLogs] = useState(["Campfire mobile"])
   const [transcibeResult, setTranscibeResult] = useState<string | null>(null)
+  const transcribeResultRef = useRef<string | null>(null);
   const stopTranscribeRef = useRef<{ stop: () => void } | null>(null);
 
   const log = useCallback((...messages: any[]) => {
@@ -30,6 +31,11 @@ export default function Index() {
     whisperContextRef.current?.release()
     whisperContextRef.current = null
   }, [])
+
+  const updateTranscribeResult = useCallback((result: string) => {
+    transcribeResultRef.current = result;
+    setTranscibeResult(result);
+  }, []);
 
   const progress = useCallback(
     ({
@@ -63,11 +69,10 @@ export default function Index() {
         const { isCapturing, data, processTime, recordingTime } = evt
 
         if (data?.result.toLowerCase().includes("start")) {
-          setTranscibeResult(`${data?.result}`)
+          updateTranscribeResult(data.result);
         }
 
         if (data?.result.toLowerCase().includes("stop")) {
-          // emitter.emit("stopDetected", { message: "what up"})
           log("Stop was detected")
 
           const t0 = Date.now()
@@ -76,13 +81,13 @@ export default function Index() {
           log('Stopped transcribing in', t1 - t0, 'ms')
           stopTranscribeRef.current = null;
 
-          log(transcibeResult)
+          log(transcribeResultRef.current)
         }
 
         if (!isCapturing) {
           stopTranscribeRef.current = null;
           log('Finished realtime transcribing')
-          log(transcibeResult)
+          log(transcribeResultRef.current)
         }
       })
     } catch (e) {
