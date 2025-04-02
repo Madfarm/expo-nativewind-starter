@@ -34,10 +34,10 @@ export default function Index() {
     emitter.addListener("stop", async () => {
       log("Stop was detected")
 
-      const t0 = Date.now()
-      await stopTranscribeRef.current?.stop()
-      const t1 = Date.now()
-      log('Stopped transcribing in', t1 - t0, 'ms')
+      // const t0 = Date.now()
+      // await stopTranscribeRef.current?.stop()
+      // const t1 = Date.now()
+      // log('Stopped transcribing in', t1 - t0, 'ms')
 
       stopTranscribeRef.current = null
 
@@ -71,8 +71,16 @@ export default function Index() {
   )
 
   const startTranscribe = async () => {
-    log('Start realtime transcribing...')
+    if (stopTranscribeRef?.current) {
+      const t0 = Date.now()
+      await stopTranscribeRef.current?.stop()
+      const t1 = Date.now()
+      log('Stopped transcribing in', t1 - t0, 'ms')
+    }
+
     if (!whisperContextRef?.current) return log('No context')
+      
+    log('Start realtime transcribing...')
     try {
       await createDir(log)
       const { stop, subscribe } =
@@ -92,13 +100,18 @@ export default function Index() {
         }
 
         if (data?.result.toLowerCase().includes("stop")) {
-          emitter.emit("stop", { message: "ayyy"})
-        }
+          const t0 = Date.now()
+          await stopTranscribeRef.current?.stop()
+          const t1 = Date.now()
+          log('Stopped transcribing in', t1 - t0, 'ms')
 
+          emitter.emit("stop", { message: "ayyy" })
+        }
+        
         if (!isCapturing) {
           stopTranscribeRef.current = null
           log('Finished realtime transcribing')
-          log(transcribeResultRef.current)
+          // log(transcribeResultRef.current)
         }
       })
     } catch (e) {
