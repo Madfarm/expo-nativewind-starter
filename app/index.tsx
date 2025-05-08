@@ -5,7 +5,8 @@ import {
   View,
   Pressable,
   ScrollView,
-  Button
+  Button,
+  GestureResponderEvent
 } from "react-native";
 import { initWhisper } from 'whisper.rn'
 import type { WhisperContext } from "whisper.rn";
@@ -22,32 +23,60 @@ export default function Index() {
   const [transcibeResult, setTranscibeResult] = useState<string | null>(null)
   const transcribeResultRef = useRef<string | null>(null);
   const stopTranscribeRef = useRef<{ stop: () => void } | null>(null)
+  const btnRef = useRef<Button | null>(null);
+  const stopInProgressRef = useRef(false);
+  const activeSubscriptionRef = useRef<((evt: any) => void) | null>(null);
 
   const log = useCallback((...messages: any[]) => {
     setLogs((prev) => [...prev, messages.join(' ')])
   }, [])
+
+  const callback = async (evt: any) => {
+    if (!activeSubscriptionRef.current) {
+      return; // We've manually disabled the subscription
+    }
+  
+    const { isCapturing, data } = evt;
+  
+    if (data?.result.toLowerCase().includes("start")) {
+      updateTranscribeResult(data.result);
+    }
+  
+    if (data?.result.toLowerCase().includes("stop")) {
+      if (stopInProgressRef.current) {
+        log("Stop already in progress, ignoring...");
+        return;
+      }
+      stopInProgressRef.current = true;
+  
+      log("Stop was detected");
+  
+      activeSubscriptionRef.current = null;
+      stopInProgressRef.current = false;
+      emitter.emit("stop", {message: "stop"})
+    }
+  };
 
   useEffect(() => {
     whisperContextRef.current?.release()
     whisperContextRef.current = null
 
     emitter.addListener("stop", async () => {
-      log("Stop was detected")
-
-      // const t0 = Date.now()
-      // await stopTranscribeRef.current?.stop()
-      // const t1 = Date.now()
-      // log('Stopped transcribing in', t1 - t0, 'ms')
-
-      stopTranscribeRef.current = null
-
+      log("Stop event emitted")
+      
       log(transcribeResultRef.current)
-
-
-
-      setTimeout(() => {
-        startTranscribe();
-      }, 2000);
+      
+      
+      setTimeout(async () => {
+        if(whisperContextRef.current) {
+          log("whisper context still exists")
+        }
+        
+        if(btnRef.current?.props.onPress) {
+          await btnRef?.current?.props?.onPress({} as GestureResponderEvent);
+          stopTranscribeRef.current = null
+        }
+      }, 10000);
     })
   }, [])
 
@@ -70,16 +99,17 @@ export default function Index() {
     [log],
   )
 
-  const startTranscribe = async () => {
+  const startTranscribe = async (_event?: GestureResponderEvent) => {
     if (stopTranscribeRef?.current) {
       const t0 = Date.now()
       await stopTranscribeRef.current?.stop()
       const t1 = Date.now()
       log('Stopped transcribing in', t1 - t0, 'ms')
+      return
     }
 
     if (!whisperContextRef?.current) return log('No context')
-      
+
     log('Start realtime transcribing...')
     try {
       await createDir(log)
@@ -92,28 +122,8 @@ export default function Index() {
           audioOutputPath: "../assets/audio/temp.wav",
         })
       stopTranscribeRef.current = { stop }
-      subscribe(async (evt) => {
-        const { isCapturing, data, processTime, recordingTime } = evt
-
-        if (data?.result.toLowerCase().includes("start")) {
-          updateTranscribeResult(data.result)
-        }
-
-        if (data?.result.toLowerCase().includes("stop")) {
-          const t0 = Date.now()
-          await stopTranscribeRef.current?.stop()
-          const t1 = Date.now()
-          log('Stopped transcribing in', t1 - t0, 'ms')
-
-          emitter.emit("stop", { message: "ayyy" })
-        }
-        
-        if (!isCapturing) {
-          stopTranscribeRef.current = null
-          log('Finished realtime transcribing')
-          // log(transcribeResultRef.current)
-        }
-      })
+      activeSubscriptionRef.current = callback;
+      subscribe(callback);
     } catch (e) {
       log('Error:', e)
     }
@@ -128,6 +138,7 @@ export default function Index() {
           <Button
             title={stopTranscribeRef.current?.stop ? 'Stop' : 'Realtime'}
             onPress={startTranscribe}
+            ref={btnRef}
           >
 
           </Button>
