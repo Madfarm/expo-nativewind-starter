@@ -71,15 +71,14 @@ export default function Index() {
       
       log(transcribeResultRef.current)
       
+      if(btnRef.current?.props.onPress) {
+        await btnRef?.current?.props?.onPress({} as GestureResponderEvent);
+        stopTranscribeRef.current = null
+      }
       
       setTimeout(async () => {
-        if(whisperContextRef.current) {
-          log("whisper context still exists")
-        }
-        
         if(btnRef.current?.props.onPress) {
           await btnRef?.current?.props?.onPress({} as GestureResponderEvent);
-          stopTranscribeRef.current = null
         }
       }, 10000);
     })
@@ -89,6 +88,24 @@ export default function Index() {
     transcribeResultRef.current = result;
     setTranscibeResult(result);
   }, []);
+
+  const initModel = async () => {
+    if (whisperContextRef.current) {
+      log('Found previous context')
+      await whisperContextRef.current.release()
+      whisperContextRef.current = null
+      log('Released previous context')
+    }
+    log('Initialize context...')
+    const startTime = Date.now()
+    const ctx = await initWhisper({
+      filePath: require('../assets/model/ggml-small.bin'),
+    })
+    const endTime = Date.now()
+    log('Loaded model, ID:', ctx.id)
+    log('Loaded model in', endTime - startTime, "ms")
+    whisperContextRef.current = ctx
+  }
 
   const startTranscribe = async (_event?: GestureResponderEvent) => {
     if (stopTranscribeRef?.current) {
@@ -108,7 +125,7 @@ export default function Index() {
         await whisperContextRef.current.transcribeRealtime({
           maxLen: 1,
           language: 'en',
-          realtimeAudioSec: 60,
+          realtimeAudioSec: 600,
           realtimeAudioSliceSec: 25,
           audioOutputPath: "../assets/audio/temp.wav",
         })
@@ -141,24 +158,8 @@ export default function Index() {
               const perms = await requestAllPermissions()
               log(`Permissions granted? - ${perms}`)
               setPermissionsGranted(perms)
-
-              if (whisperContextRef.current) {
-                log('Found previous context')
-                await whisperContextRef.current.release()
-                whisperContextRef.current = null
-                log('Released previous context')
-              }
-              log('Initialize context...')
-              const startTime = Date.now()
-              const ctx = await initWhisper({
-                filePath: require('../assets/model/ggml-small.bin'),
-              })
-              const endTime = Date.now()
-              log('Loaded model, ID:', ctx.id)
-              log('Loaded model in', endTime - startTime, "ms")
-              whisperContextRef.current = ctx
-
-
+              await initModel()
+              
             }}
           >
             <Text className="text-white text-2xl">Request Permissions</Text>
