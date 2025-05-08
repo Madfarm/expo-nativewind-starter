@@ -23,7 +23,12 @@ export default function Index() {
   const [transcibeResult, setTranscibeResult] = useState<string | null>(null)
   const transcribeResultRef = useRef<string | null>(null);
   const stopTranscribeRef = useRef<{ stop: () => void } | null>(null)
+
+  // By pressing the button programmatically instead of calling the function 
+  // we can force the code to execute on the UI thread
   const btnRef = useRef<Button | null>(null);
+
+  // These are here to prevent multiple stops from occurring 
   const stopInProgressRef = useRef(false);
   const activeSubscriptionRef = useRef<((evt: any) => void) | null>(null);
 
@@ -84,20 +89,6 @@ export default function Index() {
     transcribeResultRef.current = result;
     setTranscibeResult(result);
   }, []);
-
-  const progress = useCallback(
-    ({
-      contentLength,
-      bytesWritten,
-    }: {
-      contentLength: number
-      bytesWritten: number
-    }) => {
-      const written = bytesWritten >= 0 ? bytesWritten : 0
-      log(`Download progress: ${Math.round((written / contentLength) * 100)}%`)
-    },
-    [log],
-  )
 
   const startTranscribe = async (_event?: GestureResponderEvent) => {
     if (stopTranscribeRef?.current) {
