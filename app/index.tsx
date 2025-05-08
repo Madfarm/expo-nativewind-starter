@@ -14,8 +14,6 @@ import { fileDir, modelHost, createDir, toTimestamp } from "@/lib/util";
 import emitter from "@/lib/emitter";
 
 
-
-
 export default function Index() {
   const whisperContextRef = useRef<WhisperContext | null>(null)
   const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false)
@@ -75,13 +73,19 @@ export default function Index() {
         await btnRef?.current?.props?.onPress({} as GestureResponderEvent);
         stopTranscribeRef.current = null
       }
-      
+
       setTimeout(async () => {
+        await initModel()
         if(btnRef.current?.props.onPress) {
           await btnRef?.current?.props?.onPress({} as GestureResponderEvent);
         }
-      }, 10000);
+      }, 1000)
+        
     })
+
+    return () => {
+      emitter.removeAllListeners()
+    };
   }, [])
 
   const updateTranscribeResult = useCallback((result: string) => {
