@@ -30,28 +30,29 @@ export default function Index() {
   }, [])
 
   const callback = async (evt: any) => {
+    log('callback executed')
     if (!activeSubscriptionRef.current) {
-      return; 
+      return;
     }
-  
+
     const { isCapturing, data } = evt;
-  
+
     if (data?.result.toLowerCase().includes("start")) {
       updateTranscribeResult(data.result);
     }
-  
+
     if (data?.result.toLowerCase().includes("stop")) {
       if (stopInProgressRef.current) {
         log("Stop already in progress, ignoring...");
         return;
       }
       stopInProgressRef.current = true;
-  
+
       log("Stop was detected");
-  
+
       activeSubscriptionRef.current = null;
       stopInProgressRef.current = false;
-      emitter.emit("stop", {message: "stop"})
+      emitter.emit("stop", { message: "stop" })
     }
   };
 
@@ -62,15 +63,15 @@ export default function Index() {
     emitter.addListener("stop", async () => {
       log("Stop event emitted")
       log(transcribeResultRef.current)
-      
+
       startTranscribe();
       stopTranscribeRef.current = null
-      
+
       setTimeout(async () => {
         await initModel()
         startTranscribe();
       }, 1000)
-        
+
     })
 
     return () => {
@@ -107,6 +108,9 @@ export default function Index() {
       await stopTranscribeRef.current?.stop()
       const t1 = Date.now()
       log('Stopped transcribing in', t1 - t0, 'ms')
+
+      stopTranscribeRef.current = null;
+      activeSubscriptionRef.current = null;
       return
     }
 
@@ -115,6 +119,10 @@ export default function Index() {
     log('Start realtime transcribing...')
     try {
       await createDir(log)
+
+      stopTranscribeRef.current = null;
+      activeSubscriptionRef.current = null;
+
       const { stop, subscribe } =
         await whisperContextRef.current.transcribeRealtime({
           maxLen: 1,
@@ -152,7 +160,7 @@ export default function Index() {
               log(`Permissions granted? - ${perms}`)
               setPermissionsGranted(perms)
               await initModel()
-              
+
             }}
           >
             <Text className="text-white text-2xl">Request Permissions</Text>
