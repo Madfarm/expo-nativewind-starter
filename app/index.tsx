@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   Button,
-  GestureResponderEvent
 } from "react-native";
 import { initWhisper } from 'whisper.rn'
 import type { WhisperContext } from "whisper.rn";
@@ -22,10 +21,6 @@ export default function Index() {
   const transcribeResultRef = useRef<string | null>(null);
   const stopTranscribeRef = useRef<{ stop: () => void } | null>(null)
 
-  // By pressing the button programmatically instead of calling the function 
-  // we can force the code to execute on the UI thread
-  const btnRef = useRef<Button | null>(null);
-
   // These are here to prevent multiple stops from occurring 
   const stopInProgressRef = useRef(false);
   const activeSubscriptionRef = useRef<((evt: any) => void) | null>(null);
@@ -36,7 +31,7 @@ export default function Index() {
 
   const callback = async (evt: any) => {
     if (!activeSubscriptionRef.current) {
-      return; // We've manually disabled the subscription
+      return; 
     }
   
     const { isCapturing, data } = evt;
@@ -66,19 +61,14 @@ export default function Index() {
 
     emitter.addListener("stop", async () => {
       log("Stop event emitted")
-      
       log(transcribeResultRef.current)
       
-      if(btnRef.current?.props.onPress) {
-        await btnRef?.current?.props?.onPress({} as GestureResponderEvent);
-        stopTranscribeRef.current = null
-      }
-
+      startTranscribe();
+      stopTranscribeRef.current = null
+      
       setTimeout(async () => {
         await initModel()
-        if(btnRef.current?.props.onPress) {
-          await btnRef?.current?.props?.onPress({} as GestureResponderEvent);
-        }
+        startTranscribe();
       }, 1000)
         
     })
@@ -111,7 +101,7 @@ export default function Index() {
     whisperContextRef.current = ctx
   }
 
-  const startTranscribe = async (_event?: GestureResponderEvent) => {
+  const startTranscribe = async () => {
     if (stopTranscribeRef?.current) {
       const t0 = Date.now()
       await stopTranscribeRef.current?.stop()
@@ -150,7 +140,6 @@ export default function Index() {
           <Button
             title={stopTranscribeRef.current?.stop ? 'Stop' : 'Realtime'}
             onPress={startTranscribe}
-            ref={btnRef}
           >
 
           </Button>
